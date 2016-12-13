@@ -1,10 +1,51 @@
 from time import sleep
 import serial
 
+
+
+
+
+class _Getch:
+    """Gets a single character from standard input.  Does not echo to the
+screen."""
+    def __init__(self):
+        try:
+            self.impl = _GetchWindows()
+        except ImportError:
+            self.impl = _GetchUnix()
+
+    def __call__(self): return self.impl()
+
+
+class _GetchUnix:
+    def __init__(self):
+        import tty, sys
+
+    def __call__(self):
+        import sys, tty, termios
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
+
+
+class _GetchWindows:
+    def __init__(self):
+        import msvcrt
+
+    def __call__(self):
+        import msvcrt
+        return msvcrt.getch()
+
+
+getch = _Getch()
 ser = serial.Serial('/dev/ttyACM0', 9600)
+
 while True:
-	name = raw_input("press keys: ")
-	ser = serial.Serial('/dev/ttyACM0', 9600)
-	#ser.write('3')
-	print '{} type{}'.format(name, type(name))
-	ser.write(name)
+	char = getch()  # User input, but not displayed on the screen
+	print '{} type{}'.format(char, type(char))
+	ser.write(char)
